@@ -1,13 +1,14 @@
 const Signup = require("../Model/signupmodel");
+const ShopSchema = require("../Model/shopmodel");
 const bcrypt = require('bcryptjs');
 //const nodemailer = require("nodemailer");
 require('dotenv').config();
 
 const SignupCtrl = async (req, res) => {
   console.log(req.body)
-  const {shop_id, first_name,last_name ,email,password, phone ,address, post_code,city,state,country } = req.body;
-   
-  if (!shop_id || !first_name || !last_name || !email  || !phone || !address || !post_code || !city || !state || !country ) {
+  const { shop_id, first_name, last_name, email, password, phone, address, post_code, city, state, country } = req.body;
+
+  if (!shop_id || !first_name || !last_name || !email || !phone || !address || !post_code || !city || !state || !country) {
     return res.status(400).json({ message: "Please fill all the fields" });
   }
 
@@ -23,14 +24,14 @@ const SignupCtrl = async (req, res) => {
     //const hashedPassword = await bcrypt.hash(password, 10);
 
 
-    const user = new Signup({ shop_id, first_name,last_name, email, password: hashedPassword , phone, address,post_code,city,state,country });
+    const user = new Signup({ shop_id, first_name, last_name, email, password: hashedPassword, phone, address, post_code, city, state, country });
     const data = await user.save();
-    if(data){
-      return res.status(200).json({ message: "Signup successfully " ,success:"true",user:user });
-    }else{
+    if (data) {
+      return res.status(200).json({ message: "Signup successfully ", success: "true", user: user });
+    } else {
       return res.status(400).json({ message: "registation faild" });
     }
-   
+
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Internal server error", error: error.message });
@@ -39,10 +40,36 @@ const SignupCtrl = async (req, res) => {
 
 
 
-const Getdata = async (req, res) => {
+
+const mongoose = require('mongoose');
+
+const SingledatabyId = async (req, res) => {
   try {
-    const response = await Signup.find();
-    res.status(200).json({ message: "Data retrieved successfully",success: true, data: response });
+    const { id } = req.query;
+
+    // If id is not provided, return all Signup data
+    if (!id) {
+      const allData = await Signup.find();
+      return res.status(200).json({ message: "All data retrieved successfully", success: true, data: allData });
+    }
+
+    // Validate ObjectId
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "Invalid ID format", success: false });
+    }
+
+    // Try to find data by id
+    let result = await ShopSchema.findById(id);
+    if (!result) {
+      result = await Signup.findById(id);
+    }
+
+    if (!result) {
+      return res.status(404).json({ message: "Data not found", success: false });
+    }
+
+    res.status(200).json({ message: "Data retrieved successfully", success: true, data: result });
+
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Internal server error", error: error.message });
@@ -50,19 +77,19 @@ const Getdata = async (req, res) => {
 };
 
 
-const Singledata= async( req,res)=>{
-  const response= await Signup.findOne({_id:req.params.sid})
+const Singledata = async (req, res) => {
+  const response = await Signup.findOne({ _id: req.params.sid })
   // console.log(response)
-    try{
-      if(response){
-        return res.status(200).json({ message: "Data fetch successfully", success:true, data:response });
-      }else{
-        return res.status(400).json({ message: "error" });
-      }
-    }catch(error){
-      console.log(error)
-      return res.status(500).json({ message: "internal server error" });
+  try {
+    if (response) {
+      return res.status(200).json({ message: "Data fetch successfully", success: true, data: response });
+    } else {
+      return res.status(400).json({ message: "error" });
     }
+  } catch (error) {
+    console.log(error)
+    return res.status(500).json({ message: "internal server error" });
+  }
 }
 
 const Deletedata = async (req, res) => {
@@ -86,6 +113,7 @@ const updatedUser = async (req, res) => {
 
     const user = await Signup.findById(id);
     if (!user) {
+      
       return res.status(404).json({ message: "User not found" });
     }
 
@@ -109,7 +137,7 @@ const updatedUser = async (req, res) => {
         //shop_id: user.shop_id, // **Shop ID remains unchanged**
         first_name: user.first_name,
         last_name: user.last_name,
-       // email: user.email,
+        // email: user.email,
         phone: user.phone,
         address: user.address,
         post_code: user.post_code,
@@ -128,4 +156,4 @@ const updatedUser = async (req, res) => {
 
 
 
-module.exports = { SignupCtrl, Getdata, Deletedata ,Singledata, updatedUser};
+module.exports = { SignupCtrl, Deletedata, Singledata, updatedUser, SingledatabyId };
