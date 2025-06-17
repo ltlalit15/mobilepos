@@ -719,67 +719,64 @@ const getSoldQuantityReport = async (req, res) => {
 };
 
 
-
+//Australia time zone
 const getMultiSaleSummary = async (req, res) => {
   try {
     const { shop_id, customer_id, start_date, end_date } = req.query;
 
-    // Define the date range filter
-    const getRange = (start, end) => ({ $gte: start, $lte: end });
+    const now = DateTime.now().setZone('Australia/Melbourne');
 
-    const now = new Date();
+    // Date Ranges using Melbourne timezone
+    const startOfToday = now.startOf('day').toJSDate();
+    const endOfToday = now.endOf('day').toJSDate();
 
-    // Define start and end of today, yesterday, last 7 days, this month, last month, etc.
-    const startOfToday = new Date(); startOfToday.setHours(0, 0, 0, 0);
-    const endOfToday = new Date(); endOfToday.setHours(23, 59, 59, 999);
+    const startOfYesterday = now.minus({ days: 1 }).startOf('day').toJSDate();
+    const endOfYesterday = now.minus({ days: 1 }).endOf('day').toJSDate();
 
-    const startOfYesterday = new Date(); startOfYesterday.setDate(now.getDate() - 1); startOfYesterday.setHours(0, 0, 0, 0);
-    const endOfYesterday = new Date(); endOfYesterday.setDate(now.getDate() - 1); endOfYesterday.setHours(23, 59, 59, 999);
+    const startOfLast7Days = now.minus({ days: 6 }).startOf('day').toJSDate();
 
-    const startOfLast7Days = new Date(); startOfLast7Days.setDate(now.getDate() - 6); startOfLast7Days.setHours(0, 0, 0, 0);
+    const startOfThisMonth = now.startOf('month').toJSDate();
+    const endOfThisMonth = now.endOf('month').toJSDate();
 
-    const startOfThisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-    const endOfThisMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+    const startOfLastMonth = now.minus({ months: 1 }).startOf('month').toJSDate();
+    const endOfLastMonth = now.minus({ months: 1 }).endOf('month').toJSDate();
 
-    const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-    const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
+    const startOfThisYear = now.startOf('year').toJSDate();
+    const endOfThisYear = now.endOf('year').toJSDate();
 
-    const startOfThisYear = new Date(now.getFullYear(), 0, 1);
-    const endOfThisYear = new Date(now.getFullYear(), 11, 31, 23, 59, 59, 999);
-
-    const startOfLastYear = new Date(now.getFullYear() - 1, 0, 1);
-    const endOfLastYear = new Date(now.getFullYear() - 1, 11, 31, 23, 59, 59, 999);
+    const startOfLastYear = now.minus({ years: 1 }).startOf('year').toJSDate();
+    const endOfLastYear = now.minus({ years: 1 }).endOf('year').toJSDate();
 
     const startOfAll = new Date(0);
 
+    // Custom Date Range
     let startOfCustom = null, endOfCustom = null;
     if (start_date && end_date) {
-      startOfCustom = new Date(`${start_date}T00:00:00.000Z`);
-      endOfCustom = new Date(`${end_date}T23:59:59.999Z`);
+      startOfCustom = DateTime.fromISO(`${start_date}T00:00:00`, { zone: 'Australia/Melbourne' }).toJSDate();
+      endOfCustom = DateTime.fromISO(`${end_date}T23:59:59.999`, { zone: 'Australia/Melbourne' }).toJSDate();
     }
 
-    // Build the query based on date and optional shop_id
+    // Build Query
+    const getRange = (start, end) => ({ $gte: start, $lte: end });
+
     const buildQuery = (start, end) => {
-      const query = {
-        created_at: getRange(start, end),
-      };
-      if (shop_id) query.shop_id = shop_id;  // Ensures we filter by shop_id
-      if (customer_id) query.customer_id = customer_id;  // Optional customer filter
+      const query = { created_at: getRange(start, end) };
+      if (shop_id) query.shop_id = shop_id;
+      if (customer_id) query.customer_id = customer_id;
       return query;
     };
 
-    // Fetch all shops list from the Shop model
-    const allShops = await Shop.find(); // Assumes Shop model is present
+    // Get Shops
+    const allShops = await Shop.find();
     const shopList = allShops.map(shop => shop.name);
 
-    // Fetch the multi-sale summary data from Summary model
+    // Fetch Summary Data Function
     const fetchSummaryData = async (start, end) => {
-      const summaries = await Summary.find(buildQuery(start, end)).populate('shop_id'); // Populate shop_id with store details
+      const summaries = await Summary.find(buildQuery(start, end)).populate('shop_id');
 
       return summaries.reduce((acc, summary) => {
-        const storeName = summary.shop_id ? summary.shop_id.name : "Unknown Store"; // Assuming 'name' is the field containing the store name
-        
-        // Initialize data if not present
+        const storeName = summary.shop_id ? summary.shop_id.name : "Unknown Store";
+
         if (!acc[storeName]) {
           acc[storeName] = {
             repairs: 0,
@@ -789,25 +786,22 @@ const getMultiSaleSummary = async (req, res) => {
           };
         }
 
-        // Sum repairs (from repairParts array)
         summary.repairParts.forEach(repair => {
-          acc[storeName].repairs += repair.price * repair.quantity || 0;  // Repairs total value
+          acc[storeName].repairs += repair.price * repair.quantity || 0;
         });
 
-        // Sum product details (price * quantity for each product)
         summary.productDetails.forEach(product => {
-          acc[storeName].products += product.price * product.quantity || 0;  // Product total value
+          acc[storeName].products += product.price * product.quantity || 0;
         });
 
-        // Sum total sales (invoice total) and total paid (sum of payments)
-        acc[storeName].totalAmount += summary.total || 0;  // Total value of the invoice
-        acc[storeName].numInvoices += 1; // Count number of invoices
+        acc[storeName].totalAmount += summary.total || 0;
+        acc[storeName].numInvoices += 1;
 
         return acc;
       }, {});
     };
 
-    // Execute for custom date range or fallback to the default range
+    // Main Results
     const results = {
       today: await fetchSummaryData(startOfToday, endOfToday),
       yesterday: await fetchSummaryData(startOfYesterday, endOfYesterday),
@@ -817,15 +811,12 @@ const getMultiSaleSummary = async (req, res) => {
       thisYear: await fetchSummaryData(startOfThisYear, endOfThisYear),
       lastYear: await fetchSummaryData(startOfLastYear, endOfLastYear),
       all: await fetchSummaryData(startOfAll, endOfToday),
-      custom: startOfCustom && endOfCustom 
-        ? await fetchSummaryData(startOfCustom, endOfCustom) 
-        : {}
+      custom: startOfCustom && endOfCustom ? await fetchSummaryData(startOfCustom, endOfCustom) : {}
     };
 
-    // Initialize the totals object (only calculate totals once per shop)
+    // Totals Calculation
     const totals = {};
 
-    // First, populate totals with "all" time range data (this should be the accumulated total for each shop)
     for (const shopName in results.all) {
       const shopData = results.all[shopName];
       totals[shopName] = {
@@ -836,7 +827,6 @@ const getMultiSaleSummary = async (req, res) => {
       };
     }
 
-    // Now, we need to add today's data to the totals
     for (const shopName in results.today) {
       const todayData = results.today[shopName];
 
@@ -848,7 +838,6 @@ const getMultiSaleSummary = async (req, res) => {
       }
     }
 
-    // Final result including the list of all shops and their totals
     const finalResult = {
       shops: shopList,
       summaryData: results,
