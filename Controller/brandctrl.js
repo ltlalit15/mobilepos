@@ -36,7 +36,7 @@ const createbrand = async (req, res) => {
 
 //get product
  const getbrand= async(req,res)=>{
-  const response= await brand.find({}).populate('category', 'category_name')
+  const response= await brand.find({}).populate('category', 'category_name').sort({ createdAt: 1 });
     try{
       if(response){
         return res.status(200).json({ message: "brand fetch successfully",success:true, data:response });
@@ -48,6 +48,7 @@ const createbrand = async (req, res) => {
       return res.status(500).json({ message: "internal server error" });
     }
 }
+
 
 //get single product
  const singlebrand = async(req,res)=>{
