@@ -67,19 +67,31 @@ const createcategory = async (req, res) => {
 // };
 
 //get product
- const getcategory= async(req,res)=>{
-  const response= await Category.find({})
-    try{
-      if(response){
-        return res.status(200).json({ message: "category fetch successfully",success:true, data:response });
-      }else{
-        return res.status(400).json({ message: "error" });
-      }
-    }catch(error){
-      console.log(error)
-      return res.status(500).json({ message: "internal server error" });
+ const getcategory = async (req, res) => {
+  try {
+    // Fetch categories and sort by createdAt in descending order (most recent first)
+    const response = await Category.find().sort({ createdAt: 1 });
+
+    if (response.length > 0) {
+      return res.status(200).json({
+        message: "Categories fetched successfully",
+        success: true,
+        data: response
+      });
+    } else {
+      return res.status(404).json({
+        message: "No categories found",
+        success: false
+      });
     }
-}
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      message: "Internal server error",
+      success: false
+    });
+  }
+};
 
 //get single product
  const singlecategory = async(req,res)=>{
