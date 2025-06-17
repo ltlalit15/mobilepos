@@ -270,7 +270,7 @@ const getAllInvoices = async (req, res) => {
             .populate({
                 path: "repairParts.deviceId",  // Populate deviceId in repairParts
                 model: "Device"
-            });
+            }).sort({ createdAt: 1 });
 
         // Transform repairParts array with null check
         invoices = invoices.map(invoice => {
