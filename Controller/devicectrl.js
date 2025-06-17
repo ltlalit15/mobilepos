@@ -37,7 +37,7 @@ const getAllDevices = async (req, res) => {
     const response = await device.find({})
     .populate("brand", "brand_name") // ✅ Brand details
     .populate("category", "category_name") // ✅ Category details
-    .populate("shop", "shop_name"); // ✅ Shop details (optional)
+    .populate("shop", "shop_name").sort({ createdAt: 1 }); // ✅ Shop details (optional)
     
     if (response.length > 0) {
       return res.status(200).json({ message: "Devices fetched successfully", success: true, data: response });
