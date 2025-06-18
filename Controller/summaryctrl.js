@@ -99,26 +99,13 @@ const createSummary = async (req, res) => {
 // new code
 const getAllSummary = async (req, res) => {
   try {
-    const { start_date, end_date } = req.query;
+    // Always use today's date with Australia/Melbourne timezone
+    const todayStart = DateTime.now().setZone('Australia/Melbourne').startOf('day').toJSDate();
+    const todayEnd = DateTime.now().setZone('Australia/Melbourne').endOf('day').toJSDate();
 
-    // Apply timezone conversion (Australia/Melbourne) regardless of query parameters
-    let dateFilter = {};
-    if (start_date && end_date) {
-      const startOfCustom = DateTime.fromISO(start_date, { zone: 'Australia/Melbourne' }).startOf('day').toJSDate();
-      const endOfCustom = DateTime.fromISO(end_date, { zone: 'Australia/Melbourne' }).endOf('day').toJSDate();
-
-      dateFilter = {
-        created_at: { $gte: startOfCustom, $lte: endOfCustom }
-      };
-    } else {
-      // If no start_date and end_date, apply timezone to today's date
-      const todayStart = DateTime.now().setZone('Australia/Melbourne').startOf('day').toJSDate();
-      const todayEnd = DateTime.now().setZone('Australia/Melbourne').endOf('day').toJSDate();
-
-      dateFilter = {
-        created_at: { $gte: todayStart, $lte: todayEnd }
-      };
-    }
+    const dateFilter = {
+      created_at: { $gte: todayStart, $lte: todayEnd }
+    };
 
     const summaries = await Summary.find(dateFilter)
       .populate('customer_id')
@@ -159,7 +146,6 @@ const getAllSummary = async (req, res) => {
     });
   }
 };
-
 
 const getSummaryById = async (req, res) => {
   try {
