@@ -99,8 +99,9 @@ const createSummary = async (req, res) => {
 // new code
 const getAllSummary = async (req, res) => {
   try {
-   const { start_date, end_date } = req.query;
+    const { start_date, end_date } = req.query;
 
+    // Apply timezone conversion (Australia/Melbourne) regardless of query parameters
     let dateFilter = {};
     if (start_date && end_date) {
       const startOfCustom = DateTime.fromISO(start_date, { zone: 'Australia/Melbourne' }).startOf('day').toJSDate();
@@ -108,6 +109,14 @@ const getAllSummary = async (req, res) => {
 
       dateFilter = {
         created_at: { $gte: startOfCustom, $lte: endOfCustom }
+      };
+    } else {
+      // If no start_date and end_date, apply timezone to today's date
+      const todayStart = DateTime.now().setZone('Australia/Melbourne').startOf('day').toJSDate();
+      const todayEnd = DateTime.now().setZone('Australia/Melbourne').endOf('day').toJSDate();
+
+      dateFilter = {
+        created_at: { $gte: todayStart, $lte: todayEnd }
       };
     }
 
