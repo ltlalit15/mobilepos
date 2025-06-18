@@ -99,7 +99,7 @@ const createSummary = async (req, res) => {
 // new code
 const getAllSummary = async (req, res) => {
   try {
-   // const { start_date, end_date } = req.query;
+   const { start_date, end_date } = req.query;
 
     let dateFilter = {};
     if (start_date && end_date) {
