@@ -96,59 +96,60 @@ const createSummary = async (req, res) => {
 // };
 
 
+// new code
 const getAllSummary = async (req, res) => {
   try {
-      const summaries = await Summary.find()
-          .populate('customer_id') // Populating customer details
-          .populate('shop_id') // Populating shop details
-          .populate({
-              path: 'repairParts.categoryId', // Populate categoryId in repairParts
-              model: 'category'
-          })
-          .populate({
-              path: 'repairParts.brandId', // Populate brandId in repairParts
-              model: 'Brand'
-          })
-          .populate({
-              path: 'repairParts.deviceId', // Populate deviceId in repairParts
-              model: 'Device'
-          });
+    const { start_date, end_date } = req.query;
 
-      // Transform the data to include categoryId, category_name, brandId, brand_name, deviceId, device_name
-      const transformedSummaries = summaries.map(summary => ({
-          ...summary.toObject(),
-          repairParts: summary.repairParts.map(rp => ({
-              _id: rp._id,
-              name: rp.name || "",       // ✅ Name of the repair part
-              quantity: rp.quantity || 0, 
-              categoryId: rp.categoryId?._id || "", // Category ID
-              category_name: rp.categoryId?.category_name || "", // Category name
-              brandId: rp.brandId?._id || "", // Brand ID
-              brand_name: rp.brandId?.brand_name || "", // Brand name
-              deviceId: rp.deviceId?._id || "", // Device ID
-              device_name: rp.deviceId?.device_name || "", // Device name
-              price: rp.price || 0, // Example price field, adjust based on your model
-              createdAt: rp.createdAt || "",
-              updatedAt: rp.updatedAt || ""
-          }))
-      }));
+    let dateFilter = {};
+    if (start_date && end_date) {
+      const startOfCustom = DateTime.fromISO(start_date, { zone: 'Australia/Melbourne' }).startOf('day').toJSDate();
+      const endOfCustom = DateTime.fromISO(end_date, { zone: 'Australia/Melbourne' }).endOf('day').toJSDate();
 
-      res.status(200).json({
-          message: "All summaries fetched successfully",
-          success: true,
-          data: transformedSummaries
-      });
+      dateFilter = {
+        created_at: { $gte: startOfCustom, $lte: endOfCustom }
+      };
+    }
+
+    const summaries = await Summary.find(dateFilter)
+      .populate('customer_id')
+      .populate('shop_id')
+      .populate({ path: 'repairParts.categoryId', model: 'category' })
+      .populate({ path: 'repairParts.brandId', model: 'Brand' })
+      .populate({ path: 'repairParts.deviceId', model: 'Device' });
+
+    const transformedSummaries = summaries.map(summary => ({
+      ...summary.toObject(),
+      repairParts: summary.repairParts.map(rp => ({
+        _id: rp._id,
+        name: rp.name || "",
+        quantity: rp.quantity || 0,
+        categoryId: rp.categoryId?._id || "",
+        category_name: rp.categoryId?.category_name || "",
+        brandId: rp.brandId?._id || "",
+        brand_name: rp.brandId?.brand_name || "",
+        deviceId: rp.deviceId?._id || "",
+        device_name: rp.deviceId?.device_name || "",
+        price: rp.price || 0,
+        createdAt: rp.createdAt || "",
+        updatedAt: rp.updatedAt || ""
+      }))
+    }));
+
+    res.status(200).json({
+      message: "All summaries fetched successfully",
+      success: true,
+      data: transformedSummaries
+    });
   } catch (error) {
-      console.error("getAllSummary error:", error);
-      res.status(500).json({
-          message: "Internal server error",
-          success: false,
-          error: error.message
-      });
+    console.error("getAllSummary error:", error);
+    res.status(500).json({
+      message: "Internal server error",
+      success: false,
+      error: error.message
+    });
   }
 };
-
-
 
 
 const getSummaryById = async (req, res) => {
