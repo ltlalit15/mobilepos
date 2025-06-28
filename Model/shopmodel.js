@@ -44,6 +44,11 @@ const shopschema = new mongoose.Schema({
     type: String, 
     default: "shop", 
   },
+   // ✅ Reset Token for forget/reset password
+  resetToken: {
+    type: String,
+    default: null,
+  }
 });
 
 const Shop = mongoose.model("Shop", shopschema);
