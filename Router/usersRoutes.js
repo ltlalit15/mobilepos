@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { SignupCtrl, Deletedata, Singledata, updatedUser, SingledatabyId} = require("../Controller/Signupctrl");
+const { SignupCtrl, Deletedata, Singledata, updatedUser} = require("../Controller/Signupctrl");
 const LoginCtrl = require('../Controller/Loginctrl');
 const upload = require('../Middileware/Multer');
 
@@ -8,7 +8,6 @@ const upload = require('../Middileware/Multer');
 router.post("/", SignupCtrl);
 
 router.get("/:sid", Singledata);
-router.get("/", SingledatabyId);
 router.patch("/:id", updatedUser);
 router.delete("/:did", Deletedata);
 
