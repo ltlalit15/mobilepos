@@ -19,6 +19,7 @@ const summaryRoutes = require('./Router/summaryRoutes');
 const summaryReportAmount = require('./Router/summaryReportAmount.routes.js');
 const getSoldQuantityReport = require('./Router/SoldQuantityReport.routes.js');
 const getMultiSaleSummary = require('./Router/MultiSaleSummary.routes.js');
+const emailRoutes = require('./Router/emailRoutes');
 
 
 // Use routes
@@ -39,6 +40,7 @@ router.use('/api/summary', summaryRoutes);
 router.use('/api/getSummaryReportAmount', summaryReportAmount);
 router.use('/api/getSoldQuantityReport', getSoldQuantityReport);
 router.use('/api/getMultiSaleSummary', getMultiSaleSummary);
+router.use('/api/email', emailRoutes);
 
 module.exports = router;
 
