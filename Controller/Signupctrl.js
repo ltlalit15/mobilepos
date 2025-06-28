@@ -83,7 +83,7 @@ const updatedUser = async (req, res) => {
     // **Shop ID and Password will not be updated**
     if (first_name) user.first_name = first_name;
     if (last_name) user.last_name = last_name;
-    //if (email) user.email = email;
+    if (email) user.email = email;
     if (phone) user.phone = phone;
     if (address) user.address = address;
     if (post_code) user.post_code = post_code;
@@ -100,7 +100,7 @@ const updatedUser = async (req, res) => {
         //shop_id: user.shop_id, // **Shop ID remains unchanged**
         first_name: user.first_name,
         last_name: user.last_name,
-        // email: user.email,
+        email: user.email,
         phone: user.phone,
         address: user.address,
         post_code: user.post_code,
