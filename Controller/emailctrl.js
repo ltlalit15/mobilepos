@@ -4,143 +4,130 @@ const bcrypt = require("bcryptjs");
 const nodemailer = require("nodemailer");
 
 const forgetPassword = async (req, res) => {
-    const { email } = req.body;
+  const { email } = req.body;
 
-    try {
-        // ✅ Check admin in Signup
-        const adminUser = await Signup.findOne({ email, role: "admin" });
+  try {
+    const adminUser = await Signup.findOne({ email, role: "admin" });
+    const relatedShop = await Shop.findOne({
+      $or: [{ adminEmail: email }, { email }],
+    });
 
-        // ✅ Check shop by adminEmail or direct email
-        const relatedShop = await Shop.findOne({
-            $or: [{ adminEmail: email }, { email: email }],
-        });
-
-        // ✅ No match
-        if (!adminUser && !relatedShop) {
-            return res.status(404).json({
-                success: false,
-                message: "No admin or shop found with this email",
-            });
-        }
-
-        // ✅ Generate 6-digit token
-        const rawToken = Math.floor(100000 + Math.random() * 900000).toString();
-
-        // ✅ Hash with bcrypt
-        const salt = await bcrypt.genSalt(10);
-        const hashedToken = await bcrypt.hash(rawToken, salt);
-
-        // ✅ Save hashed token to adminUser or relatedShop
-        if (adminUser) {
-            adminUser.resetToken = hashedToken;
-            await adminUser.save(); // ✅ SAVE in Signup collection
-        }
-
-        if (relatedShop) {
-            relatedShop.resetToken = hashedToken;
-            await relatedShop.save(); // ✅ SAVE in Shop collection
-        }
-
-        // ✅ Setup transporter
-        const transporter = nodemailer.createTransport({
-            service: "gmail",
-            auth: {
-                user: 'packageitappofficially@gmail.com',
-                pass: 'epvuqqesdioohjvi',
-            },
-            tls: {
-                rejectUnauthorized: false,
-            },
-        });
-
-        // ✅ Admin Email HTML
-        const adminMail = `
-        <div style="font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 20px;">
-          <div style="max-width: 600px; margin: auto; background: #fff; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); overflow: hidden;">
-            <div style="background: #004d40; color: white; padding: 20px; text-align: center;">
-              <h2>Password Reset Requested</h2>
-            </div>
-            <div style="padding: 20px; color: #333;">
-              <p>Dear Admin,</p>
-              <p>We received a request to reset the password for your account <strong>${email}</strong>.</p>
-              <p>If you initiated this request, click the button below to reset your password:</p>
-              <div style="text-align: center; margin: 30px 0;">
-                <a href="http://192.168.1.28:5173/Reset-Password" target="_blank" style="background-color: #00796b; color: #fff; padding: 12px 20px; text-decoration: none; border-radius: 5px; font-weight: bold;">
-                  Reset Password
-                </a>
-              </div>
-              <p>If you did not request this, please ignore this email.</p>
-              <p style="margin-top: 30px;">Regards,<br><strong>IExpert Pos Team</strong></p>
-            </div>
-            <div style="background: #e0e0e0; color: #555; text-align: center; padding: 10px; font-size: 12px;">
-              © 2025 IExpertPos. All rights reserved.
-            </div>
-          </div>
-        </div>
-        `;
-
-        // ✅ Shop Email HTML
-        const shopMail = `
-        <div style="font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 20px;">
-          <div style="max-width: 600px; margin: auto; background: #fff; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); overflow: hidden;">
-            <div style="background: #388e3c; color: white; padding: 20px; text-align: center;">
-              <h2>Admin Reset Alert</h2>
-            </div>
-            <div style="padding: 20px; color: #333;">
-              <p>Hello,</p>
-              <p>This is to inform you that the admin with email <strong>${email}</strong> has requested to reset their password.</p>
-              <p>If this was authorized by your team, no action is required. Otherwise, we recommend verifying immediately.</p>
-              <div style="text-align: center; margin: 30px 0;">
-                <a href="http://192.168.1.28:5173/Reset-Password" target="_blank" style="background-color: #43a047; color: #fff; padding: 12px 20px; text-decoration: none; border-radius: 5px; font-weight: bold;">
-                  Go to Reset Page
-                </a>
-              </div>
-              <p style="margin-top: 30px;">Regards,<br><strong>IExpert Pos Team</strong></p>
-            </div>
-            <div style="background: #e0e0e0; color: #555; text-align: center; padding: 10px; font-size: 12px;">
-              © 2025 IExpertPos. All rights reserved.
-            </div>
-          </div>
-        </div>
-        `;
-
-        // ✅ Send to Admin (if found)
-        if (adminUser) {
-            await transporter.sendMail({
-                from: 'sagar.kiaan12@gmail.com',
-                to: email,
-                subject: "Admin Password Reset Notification",
-                html: adminMail,
-            });
-        }
-
-        // ✅ Send to Shop (if found & not same email already sent)
-        if (relatedShop && relatedShop.email) {
-            if (!adminUser || relatedShop.email !== email) {
-                await transporter.sendMail({
-                    from: 'sagar.kiaan12@gmail.com',
-                    to: relatedShop.email,
-                    subject: "Admin Password Reset Alert",
-                    html: shopMail,
-                });
-            }
-        }
-
-        // ✅ Final response
-        res.status(200).json({
-            success: true,
-            message: "Reset email sent to admin/shop (if matched)",
-            token: hashedToken
-        });
-
-    } catch (error) {
-        console.error("ForgetPassword Error:", error);
-        res.status(500).json({
-            success: false,
-            message: "Internal server error",
-            error: error.message,
-        });
+    if (!adminUser && !relatedShop) {
+      return res.status(404).json({
+        success: false,
+        message: "No admin or shop found with this email",
+      });
     }
+
+    const rawToken = Math.floor(100000 + Math.random() * 900000).toString();
+    const salt = await bcrypt.genSalt(10);
+    const hashedToken = await bcrypt.hash(rawToken, salt);
+
+    if (adminUser) {
+      adminUser.resetToken = hashedToken;
+      await adminUser.save();
+    }
+
+    if (relatedShop) {
+      relatedShop.resetToken = hashedToken;
+      await relatedShop.save();
+    }
+
+    const transporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: {
+        user: 'packageitappofficially@gmail.com',
+        pass: 'epvuqqesdioohjvi',
+      },
+      tls: {
+        rejectUnauthorized: false,
+      },
+    });
+
+    // Admin Email Template
+    const adminMail = `
+      <div style="font-family: Arial, sans-serif; padding: 0; margin: 0;">
+        <div style="background-color: #004d40; padding: 20px; text-align: center;">
+          <h2 style="color: white; margin: 0;">Password Reset Requested</h2>
+        </div>
+        <div style="padding: 30px; color: #333;">
+          <p>Dear Admin,</p>
+          <p>
+            We received a request to reset the password for 
+            <a href="mailto:${email}" style="color: #0d47a1; text-decoration: none;">${email}</a>.
+          </p>
+          <p>Click the button below to reset your password:</p>
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="http://192.168.1.28:5173/Reset-Password?token=${encodeURIComponent(hashedToken)}"
+               style="background-color: #00796b; color: #fff; padding: 12px 25px; text-decoration: none; font-weight: bold; border-radius: 6px;">
+              Reset Password
+            </a>
+          </div>
+          <p style="font-size: 14px; color: #555;">
+            <strong>Token:</strong> ${hashedToken}
+          </p>
+          <p>If you didn’t request this, you can ignore this email.</p>
+          <p style="margin-top: 40px;">Regards,<br><strong>IExpert Pos Team</strong></p>
+        </div>
+      </div>
+    `;
+
+    // Shop Notification Email Template
+    const shopMail = `
+      <div style="font-family: Arial, sans-serif; padding: 0; margin: 0;">
+        <div style="background-color: #388e3c; padding: 20px; text-align: center;">
+          <h2 style="color: white; margin: 0;">Admin Reset Alert</h2>
+        </div>
+        <div style="padding: 30px; color: #333;">
+          <p>Hello,</p>
+          <p>The admin <strong>${email}</strong> has requested a password reset.</p>
+          <p>If this was not authorized, please verify immediately.</p>
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="http://192.168.1.28:5173/Reset-Password?token=${encodeURIComponent(hashedToken)}"
+               style="background-color: #43a047; color: #fff; padding: 12px 25px; text-decoration: none; font-weight: bold; border-radius: 6px;">
+              Go to Reset Page
+            </a>
+          </div>
+          <p><strong>Token:</strong> ${hashedToken}</p>
+          <p style="margin-top: 40px;">Regards,<br><strong>IExpert Pos Team</strong></p>
+        </div>
+      </div>
+    `;
+
+    // Send Admin Email
+    if (adminUser) {
+      await transporter.sendMail({
+        from: 'sagar.kiaan12@gmail.com',
+        to: email,
+        subject: "Admin Password Reset Notification",
+        html: adminMail,
+      });
+    }
+
+    // Send Shop Email (only if shop email is not same as admin)
+    if (relatedShop && relatedShop.email && (!adminUser || relatedShop.email !== email)) {
+      await transporter.sendMail({
+        from: 'sagar.kiaan12@gmail.com',
+        to: relatedShop.email,
+        subject: "Admin Password Reset Alert",
+        html: shopMail,
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Reset email sent to admin/shop (if matched)",
+      token: hashedToken, // ✅ return only for testing; remove in production
+    });
+
+  } catch (error) {
+    console.error("ForgetPassword Error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+      error: error.message,
+    });
+  }
 };
 
 
