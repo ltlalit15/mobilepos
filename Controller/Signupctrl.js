@@ -49,8 +49,10 @@ const SingledatabyId = async (req, res) => {
 
     // If id is not provided, return all Signup data
     if (!id) {
-      const allData = await Signup.find();
-      return res.status(200).json({ message: "All data retrieved successfully", success: true, data: allData });
+      return res.status(400).json({
+        success: false,
+        message: "ID is required to fetch data",
+      });
     }
 
     // Validate ObjectId
