@@ -213,4 +213,72 @@ const resetPassword = async (req, res) => {
     }
 };
 
-module.exports = { forgetPassword, resetPassword };
+const updatePassword = async (req, res) => {
+    const { id, oldPassword, newPassword } = req.body;
+
+    try {
+        if (!id || !oldPassword || !newPassword) {
+            return res.status(400).json({
+                success: false,
+                message: "id, oldPassword, and newPassword are required"
+            });
+        }
+
+        let matchedUser = null;
+        let userType = null;
+
+        // ✅ Try Signup
+        const admin = await Signup.findById(id);
+        if (admin) {
+            matchedUser = admin;
+            userType = "admin";
+        }
+
+        // ✅ Try Shop if not found in Signup
+        if (!matchedUser) {
+            const shop = await Shop.findById(id);
+            if (shop) {
+                matchedUser = shop;
+                userType = "shop";
+            }
+        }
+
+        if (!matchedUser) {
+            return res.status(404).json({
+                success: false,
+                message: "User not found"
+            });
+        }
+
+        // ✅ Compare old password
+        const isMatch = await bcrypt.compare(oldPassword, matchedUser.password);
+        if (!isMatch) {
+            return res.status(401).json({
+                success: false,
+                message: "Old password is incorrect"
+            });
+        }
+
+        // ✅ Hash and save new password
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+        matchedUser.password = hashedPassword;
+        await matchedUser.save();
+
+        return res.status(200).json({
+            success: true,
+            message: `${userType} password changed successfully`
+        });
+
+    } catch (error) {
+        console.error("ChangePasswordWithOld Error:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Internal server error",
+            error: error.message
+        });
+    }
+};
+
+module.exports = { forgetPassword, resetPassword, updatePassword };
