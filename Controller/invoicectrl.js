@@ -176,10 +176,7 @@ const createInvoice = async (req, res) => {
                 }
 
                 const availableStock = Number(dbProduct.quantity);
-                if (availableStock < Number(product.quantity)) {
-                    await session.abortTransaction();
-                    return res.status(400).json({ message: `Insufficient stock for productId: ${product.productId}`, success: false });
-                }
+               
 
                 // Compute new stock value
                 const newQuantity = availableStock - Number(product.quantity);
