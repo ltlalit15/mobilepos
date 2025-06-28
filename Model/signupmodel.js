@@ -52,6 +52,11 @@ const signupschema = new mongoose.Schema({
     type: String,
     default: "user", 
   },
+   // ✅ Reset Token for forget/reset password
+  resetToken: {
+    type: String,
+    default: null,
+  }
 });
 
 
