@@ -72,7 +72,7 @@ const Deletedata = async (req, res) => {
 const updatedUser = async (req, res) => {
   try {
     const { id } = req.params;
-    const { first_name, last_name, phone, address, post_code, city, state, country } = req.body;
+    const { first_name, last_name, email, phone, address, post_code, city, state, country } = req.body;
 
     const user = await Signup.findById(id);
     if (!user) {
