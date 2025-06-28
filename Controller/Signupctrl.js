@@ -40,45 +40,6 @@ const SignupCtrl = async (req, res) => {
 
 
 
-
-const mongoose = require('mongoose');
-
-const SingledatabyId = async (req, res) => {
-  try {
-    const { id } = req.query;
-
-    // If id is not provided, return all Signup data
-    if (!id) {
-      return res.status(400).json({
-        success: false,
-        message: "ID is required to fetch data",
-      });
-    }
-
-    // Validate ObjectId
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return res.status(400).json({ message: "Invalid ID format", success: false });
-    }
-
-    // Try to find data by id
-    let result = await ShopSchema.findById(id);
-    if (!result) {
-      result = await Signup.findById(id);
-    }
-
-    if (!result) {
-      return res.status(404).json({ message: "Data not found", success: false });
-    }
-
-    res.status(200).json({ message: "Data retrieved successfully", success: true, data: result });
-
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Internal server error", error: error.message });
-  }
-};
-
-
 const Singledata = async (req, res) => {
   const response = await Signup.findOne({ _id: req.params.sid })
   // console.log(response)
@@ -158,4 +119,4 @@ const updatedUser = async (req, res) => {
 
 
 
-module.exports = { SignupCtrl, Deletedata, Singledata, updatedUser, SingledatabyId };
+module.exports = { SignupCtrl, Deletedata, Singledata, updatedUser };
