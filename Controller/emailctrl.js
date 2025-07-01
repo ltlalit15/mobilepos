@@ -58,7 +58,7 @@ const forgetPassword = async (req, res) => {
           </p>
           <p>Click the button below to reset your password:</p>
           <div style="text-align: center; margin: 30px 0;">
-            <a href="http://192.168.1.28:5173/Reset-Password?token=${encodeURIComponent(hashedToken)}"
+            <a href="https://iexpertpos.store/Reset-Password?token=${encodeURIComponent(hashedToken)}"
                style="background-color: #00796b; color: #fff; padding: 12px 25px; text-decoration: none; font-weight: bold; border-radius: 6px;">
               Reset Password
             </a>
@@ -83,7 +83,7 @@ const forgetPassword = async (req, res) => {
           <p>The admin <strong>${email}</strong> has requested a password reset.</p>
           <p>If this was not authorized, please verify immediately.</p>
           <div style="text-align: center; margin: 30px 0;">
-            <a href="http://192.168.1.28:5173/Reset-Password?token=${encodeURIComponent(hashedToken)}"
+            <a href="https://iexpertpos.store/Reset-Password?token=${encodeURIComponent(hashedToken)}"
                style="background-color: #43a047; color: #fff; padding: 12px 25px; text-decoration: none; font-weight: bold; border-radius: 6px;">
               Go to Reset Page
             </a>
