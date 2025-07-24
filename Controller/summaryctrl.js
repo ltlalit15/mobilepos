@@ -99,16 +99,19 @@ const createSummary = async (req, res) => {
 // new code
 const getAllSummary = async (req, res) => {
   try {
-    const { start_date, end_date } = req.query;
+    const { start_date, end_date, shop_id } = req.query;
 
     let dateFilter = {};
+
     if (start_date && end_date) {
       const startOfCustom = DateTime.fromISO(start_date, { zone: 'Australia/Melbourne' }).startOf('day').toJSDate();
       const endOfCustom = DateTime.fromISO(end_date, { zone: 'Australia/Melbourne' }).endOf('day').toJSDate();
 
-      dateFilter = {
-        created_at: { $gte: startOfCustom, $lte: endOfCustom }
-      };
+      dateFilter.created_at = { $gte: startOfCustom, $lte: endOfCustom };
+    }
+
+    if (shop_id) {
+      dateFilter.shop_id = shop_id;
     }
 
     const summaries = await Summary.find(dateFilter)
@@ -120,6 +123,25 @@ const getAllSummary = async (req, res) => {
 
     const transformedSummaries = summaries.map(summary => ({
       ...summary.toObject(),
+
+      shop_id: {
+        _id: summary.shop_id?._id || "",
+        name: summary.shop_id?.name || "",
+        email: summary.shop_id?.email || "",
+        phone: summary.shop_id?.phone || "",
+        gst_number: summary.shop_id?.gst_number || "",
+        address: summary.shop_id?.address || "",
+        city: summary.shop_id?.city || "",
+        state: summary.shop_id?.state || "",
+        country: summary.shop_id?.country || "",
+        pincode: summary.shop_id?.pincode || "",
+        registration_number: summary.shop_id?.registration_number || "",
+        shop_type: summary.shop_id?.shop_type || "",
+        status: summary.shop_id?.status || "",
+        createdAt: summary.shop_id?.createdAt || "",
+        updatedAt: summary.shop_id?.updatedAt || ""
+      },
+
       repairParts: summary.repairParts.map(rp => ({
         _id: rp._id,
         name: rp.name || "",
